@@ -8,7 +8,7 @@ class Player(pygame.sprite.Sprite):
         self.player_height = player_height
         self.player_sprite = pygame.image.load(player_sprite_path)
         self.player_sprite_rect = self.player_sprite.get_rect()
-        #self.player_sprite_rect.center = (self.player_width // 2, self.player_height // 2)
+        self.player_sprite_rect.center = (self.player_width // 2, self.player_height // 2)
         self.screen = screen
         
     def show_player(self):
