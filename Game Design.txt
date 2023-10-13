@@ -1,9 +1,0 @@
-Theme: Farming
-Game Mechanix-
-1. Grid System
-2. Multiple Planets with unique ecosystem, crops, and animals
-3. Loop: Farm, Harvest, Sell, Buy
-4. You can plant, raise livestock, and build
-
-To do-
-Grid
