@@ -1,29 +1,28 @@
 import pygame
-from world.world_grid import Grid, Tile, Player
+from world.world_grid import WorldGrid, Tile, Player
 
 pygame.init()
 screen = pygame.display.set_mode((500, 500))
 pygame.display.set_caption('Desktop Farming')
 clock = pygame.time.Clock()
 
-test_grid = Grid(5, 5, (0, 0, 0), 1, 25, screen)
-
-test_tile1 = Tile(test_grid, 2, 2, 25, 25, "sprites/Dirt/plain_dirt.png")
-test_tile2 = Tile(test_grid, 2, 3, 25, 25, "sprites/Dirt/plain_dirt.png")
-test_tile3 = Tile(test_grid, 3, 2, 25, 25, "sprites/Dirt/plain_dirt.png")
-test_tile4 = Tile(test_grid, 3, 3, 25, 25, "sprites/Dirt/plain_dirt.png")
-    
-test_player = Player(test_grid, 2, 2, 20, 20, "sprites/player/player_template.png")
-
-print(test_grid.grid[0, 0])
+test_grid = WorldGrid(20, 20, screen)
+path = test_grid.find_path((0,0), (4, 1), test_grid.get_pathfinding_matrix())
+print(path)
+test_player = Player(test_grid, 2, 2, "sprites/player/player_template.png")
 
 program_is_running = True
 while program_is_running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             program_is_running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_x = pygame.mouse.get_pos()[0]
+            mouse_y = pygame.mouse.get_pos()[1]
+            click_grid_pos = test_grid.mouse_pos_to_grid_pos(mouse_x, mouse_y)
+            test_player.set_position(click_grid_pos[0], click_grid_pos[1])
             
-    screen.fill((101, 163, 96))
+    screen.fill((100, 150, 100))
     
     test_grid.show_grid_outline()
     test_grid.show_grid()
