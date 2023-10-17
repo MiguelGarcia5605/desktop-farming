@@ -1,91 +1,86 @@
 import pygame
 import numpy
-import math
 from pathfinding.core.grid import Grid as PathfindingGrid
 from pathfinding.finder.a_star import AStarFinder
 
-class WorldGrid:
-    outline_color = (0, 0, 0)
-    outline_thickness = 1
-    tile_size = 25
+class GameGrid:
+    OUTLINE_COLOR = (0, 0, 0)
+    OUTLINE_THICKNESS = 1
+    TILE_SIZE = 25
     
     def __init__(self, rows, columns, screen):
         self.rows = rows
         self.columns = columns
         self.screen = screen
-        self.grid = numpy.empty((self.columns, self.rows), dtype=object)
+        self.grid_data = numpy.empty((self.columns, self.rows), dtype=object)
         
         for c in range(self.columns):
             for r in range(self.rows):
-                self.grid[r, c] = []
+                self.grid_data[r, c] = []
 
-
-    def show_grid_outline(self):
+    def draw_grid_outline(self):
         for c in range(self.columns):
             for r in range(self.rows):
                 pygame.draw.rect(
                     self.screen, 
-                    self.outline_color, 
-                    pygame.Rect(c * self.tile_size, r * self.tile_size, self.tile_size, self.tile_size), 
-                    self.outline_thickness)
+                    self.OUTLINE_COLOR, 
+                    pygame.Rect(c * self.TILE_SIZE, r * self.TILE_SIZE, self.TILE_SIZE, self.TILE_SIZE), 
+                    self.OUTLINE_THICKNESS)
 
-    def show_grid(self):
+    def render_grid(self):
         for c in range(self.columns):
             for r in range(self.rows):
-                for obj in self.grid[r, c]:
+                for obj in self.grid_data[r, c]:
                     self.screen.blit(obj.sprite, obj.sprite_rect)
                     
-    def mouse_pos_to_grid_pos(self, x, y):
-        mouse_pos = [x, y]
-        grid_pos = [0, 0]
-        grid_pos[0] = math.floor(mouse_pos[0] / self.tile_size)
-        grid_pos[1] = math.floor(mouse_pos[1] / self.tile_size)
-        return grid_pos
+    def get_grid_position_from_screen_position(self, x, y):
+        return x // self.TILE_SIZE, y // self.TILE_SIZE
     
-    def get_pathfinding_matrix(self):
-        matrix = numpy.ones((self.rows, self.columns), dtype=int)
-        return matrix
+    def generate_pathfinding_matrix(self):
+        return numpy.ones((self.rows, self.columns), dtype=int)
     
-    def find_path(self, starting_point, ending_point, matrix):
-        grid = PathfindingGrid(matrix=matrix)
-
-        starting_point = grid.node(starting_point[0], starting_point[1])
-        ending_point = grid.node(ending_point[0], ending_point[1])
-        
+    def compute_path(self, start, end):
+        matrix = self.generate_pathfinding_matrix()
+        pathfinding_grid = PathfindingGrid(matrix=matrix)
         finder = AStarFinder()
-        path, _ = finder.find_path(starting_point, ending_point, grid)
-        return path
-
-class Tile:
-    def __init__(self, grid, grid_position_x, grid_position_y, sprite_path):
-        self.grid = grid.grid
-        self.grid[grid_position_x, grid_position_y].append(self)
+        return finder.find_path(pathfinding_grid.node(*start), pathfinding_grid.node(*end), pathfinding_grid)[0]
+    
+class GridTile:
+    def __init__(self, game_grid, x_pos, y_pos, sprite_path):
+        self.grid = game_grid.grid_data
+        self.grid[x_pos, y_pos].append(self)
         self.sprite = pygame.image.load(sprite_path)
         self.sprite_rect = self.sprite.get_rect()
-        self.sprite_rect.topleft = (grid_position_x * grid.tile_size, grid_position_y * grid.tile_size)
+        self.sprite_rect.topleft = (x_pos * GameGrid.TILE_SIZE, y_pos * GameGrid.TILE_SIZE)
 
-class Player:
-    def __init__(self, grid, grid_position_x, grid_position_y, sprite_path):
-        self.grid = grid.grid
-        self.grid_position_x = grid_position_x
-        self.grid_position_y = grid_position_y
-        self.grid[grid_position_x, grid_position_y].append(self)
+class Character:
+    PATH_FRAME_DELAY = 6
+    
+    def __init__(self, game_grid, x_pos, y_pos, sprite_path):
+        self.grid = game_grid.grid_data
+        self.x = x_pos
+        self.y = y_pos
+        self.path = []
+        self.path_frame_delay_counter = 0
+        self.is_following_path = False
+        self.grid[self.x, self.y].append(self)
+        
         self.sprite = pygame.image.load(sprite_path)
         self.sprite_rect = self.sprite.get_rect()
-        self.sprite_rect.topleft = (grid_position_x * grid.tile_size, grid_position_y * grid.tile_size)
-        cell_center_x = grid_position_x * grid.tile_size + grid.tile_size // 2
-        cell_center_y = grid_position_y * grid.tile_size + grid.tile_size // 2
-        self.sprite_rect.center = (cell_center_x, cell_center_y)
+        self.update_sprite_position()
             
-    def set_position(self, x, y):
-        self.grid[self.grid_position_x, self.grid_position_y].remove(self)
-        
-        self.grid_position_x = x
-        self.grid_position_y = y
-        
-        self.grid[self.grid_position_x, self.grid_position_y].append(self)
-        
-        cell_center_x = x * WorldGrid.tile_size + WorldGrid.tile_size // 2
-        cell_center_y = y * WorldGrid.tile_size + WorldGrid.tile_size // 2
-        self.sprite_rect.center = (cell_center_x, cell_center_y)
-        
+    def update_sprite_position(self):
+        center_x = self.x * GameGrid.TILE_SIZE + GameGrid.TILE_SIZE // 2
+        center_y = self.y * GameGrid.TILE_SIZE + GameGrid.TILE_SIZE // 2
+        self.sprite_rect.center = (center_x, center_y)
+
+    def set_path(self, path):
+        self.path = path
+
+    def move_along_path(self):
+        if self.path:
+            next_step = self.path.pop(0)
+            self.x, self.y = next_step
+            self.update_sprite_position()
+        else:
+            self.is_following_path = False
